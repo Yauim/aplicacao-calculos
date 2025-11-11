@@ -1,16 +1,59 @@
-# React + Vite
+# ⚛️ Frontend – Aplicação de Cálculos
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Interface web desenvolvida em **React + Vite**, com gráficos, login via Google e geração de relatórios em PDF.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Tecnologias Utilizadas
+- React + Vite  
+- TailwindCSS  
+- jsPDF + autoTable  
+- Recharts  
+- Axios  
+- Google Identity Services (OAuth 2.0)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🧠 Funcionalidades
+- Login com Google  
+- Tela de Gestão Financeira  
+- Cálculo automático de PMRE, PMRV, PMPF, Ciclo Operacional e Ciclo de Caixa  
+- Gráficos de barras coloridos (🟣 comum | 🟢 saudável | 🔴 atenção)  
+- Geração de relatório em PDF  
+- Histórico de cálculos e exclusão de registros  
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## ⚙️ Configuração do Ambiente
+
+Crie o arquivo `.env` dentro da pasta `Frontend/`:
+
+```bash
+VITE_GOOGLE_CLIENT_ID=seu_client_id.apps.googleusercontent.com 
+```
+💡 Importante: nunca suba este arquivo para o GitHub — ele já está ignorado pelo .gitignore.
+
+🧱 Como Rodar
+cd Frontend
+npm install
+npm run dev
+
+📄 Estrutura
+src/
+├── pages/
+│   ├── Gestao.jsx
+│   ├── Login.jsx
+│   └── Vendas.jsx
+├── components/
+│   ├── Toast.jsx
+│   └── PrivateRoute.jsx
+├── services/
+│   └── api.js
+└── utils/
+    └── checkTokenExpiration.js
+
+
+📄 Licença
+
+Este projeto é de uso acadêmico e livre para estudo e aprimoramento.
+Créditos ao autor original: Gabriel Paizante Verli.

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // ✅ IMPORT CORRETO
-import Toast from "../components/Toast"; // ✅ componente de feedback visual
+import autoTable from "jspdf-autotable";
+import Toast from "../components/Toast";
 
 function Vendas() {
     const [vendas, setVendas] = useState([]);
@@ -35,7 +35,7 @@ function Vendas() {
         carregar();
     }, []);
 
-    // 💾 Enviar nova venda
+    // 💾 Enviar nova venda (com tratamento do backend)
     const enviar = async (e) => {
         e.preventDefault();
         try {
@@ -52,7 +52,13 @@ function Vendas() {
             setToast({ message: "✅ Venda registrada com sucesso!", type: "success" });
         } catch (err) {
             console.error("Erro ao registrar venda:", err);
-            setToast({ message: "❌ Erro ao registrar venda!", type: "error" });
+
+            // ⚠️ Se o backend retornou mensagem customizada
+            if (err.response && err.response.data) {
+                setToast({ message: err.response.data, type: "error" });
+            } else {
+                setToast({ message: "❌ Erro ao registrar venda!", type: "error" });
+            }
         } finally {
             setCarregando(false);
             setTimeout(() => setToast(null), 3000);
@@ -107,7 +113,7 @@ function Vendas() {
             ]),
             theme: "grid",
             headStyles: {
-                fillColor: [46, 125, 50], // Verde Tailwind
+                fillColor: [46, 125, 50],
                 textColor: 255,
                 fontStyle: "bold",
             },
@@ -126,7 +132,6 @@ function Vendas() {
             { align: "center" }
         );
 
-        // 💾 Salva o PDF
         doc.save(`relatorio-vendas-${new Date().toISOString().split("T")[0]}.pdf`);
 
         setToast({ message: "📄 PDF de Vendas gerado com sucesso!", type: "success" });

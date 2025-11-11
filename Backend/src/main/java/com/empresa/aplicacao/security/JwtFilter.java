@@ -1,33 +1,54 @@
-package com.empresa.aplicacao_calculos.security;
+package com.empresa.aplicacao.security;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.security.Key;
-import java.util.Date;
+import java.io.IOException;
 
 @Component
-public class JwtUtil {
+public class JwtFilter extends OncePerRequestFilter {
 
-	private final Key chave = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+	private final JwtUtil jwtUtil;
 
-	public String gerarToken(String email) {
-		return Jwts.builder()
-				.setSubject(email)
-				.setIssuedAt(new Date())
-				.setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 dia
-				.signWith(chave)
-				.compact();
+	public JwtFilter(JwtUtil jwtUtil) {
+		this.jwtUtil = jwtUtil;
 	}
 
-	public String validarToken(String token) {
-		return Jwts.parserBuilder()
-				.setSigningKey(chave)
-				.build()
-				.parseClaimsJws(token)
-				.getBody()
-				.getSubject();
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+			throws ServletException, IOException {
+
+		// ⚙️ Libera preflight requests (CORS)
+		if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+			response.setStatus(HttpServletResponse.SC_OK);
+			return;
+		}
+
+		String authHeader = request.getHeader("Authorization");
+
+		if (authHeader != null && authHeader.startsWith("Bearer ")) {
+			String token = authHeader.substring(7);
+			try {
+				String email = jwtUtil.validarToken(token);
+
+				UsernamePasswordAuthenticationToken authentication =
+						new UsernamePasswordAuthenticationToken(email, null, null);
+				authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+				SecurityContextHolder.getContext().setAuthentication(authentication);
+			} catch (Exception e) {
+				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+				return;
+			}
+		}
+
+		filterChain.doFilter(request, response);
 	}
 }

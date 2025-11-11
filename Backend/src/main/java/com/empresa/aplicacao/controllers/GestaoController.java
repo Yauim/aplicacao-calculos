@@ -1,11 +1,15 @@
 package com.empresa.aplicacao.controllers;
 
 import com.empresa.aplicacao.models.Gestao;
+import com.empresa.aplicacao.models.GestaoHistorico;
 import com.empresa.aplicacao.repositories.GestaoRepository;
+import com.empresa.aplicacao.repositories.GestaoHistoricoRepository;
 import com.empresa.aplicacao.services.CalculoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,42 +22,82 @@ public class GestaoController {
     private GestaoRepository gestaoRepository;
 
     @Autowired
-    private CalculoService calculoService;  // injetar o service de cálculos
+    private GestaoHistoricoRepository gestaoHistoricoRepository;
 
-    // Listar todas gestões
+    @Autowired
+    private CalculoService calculoService;
+
+    // 🔹 Listar todas as gestões
     @GetMapping
     public List<Gestao> listar() {
         return gestaoRepository.findAll();
     }
 
-    // Criar nova gestão
+    // 🔹 Criar nova gestão (agora com histórico)
     @PostMapping
     public Gestao criar(@RequestBody Gestao gestao) {
-        return gestaoRepository.save(gestao);
+        // Salva a previsão no banco
+        Gestao novaGestao = gestaoRepository.save(gestao);
+
+        double previsaoGastos = gestao.getPrevisaoGastos();
+
+        // Calcula os indicadores
+        double pmre = calculoService.calcularPMRE();
+        double pmrv = calculoService.calcularPMRV();
+        double pmpf = calculoService.calcularPMPF();
+
+        // Calcula ciclo e saldo mínimo (versão atualizada)
+        CalculoService.CaixaResult caixa = calculoService.calcularSaldoMinimoCaixa(previsaoGastos, pmre, pmrv, pmpf);
+
+        // Cria e salva no histórico
+        GestaoHistorico hist = new GestaoHistorico(LocalDate.now(), caixa.getCicloCaixa(), caixa.getSaldoMinimo());
+        gestaoHistoricoRepository.save(hist);
+
+        return novaGestao;
     }
 
-    // Apagar gestão pelo ID
+    // 🔹 Apagar gestão pelo ID
     @DeleteMapping("/{id}")
     public void apagar(@PathVariable Long id) {
         gestaoRepository.deleteById(id);
     }
 
-    // Endpoint para os cálculos
+    // 🔹 Endpoint de cálculo (sem salvar histórico)
     @GetMapping("/calculos")
     public Map<String, Double> calcular() {
-        // Pega a previsão de gastos da primeira gestão cadastrada (ou 0 se não existir)
         double previsaoGastos = gestaoRepository.findAll().stream()
                 .findFirst()
                 .map(Gestao::getPrevisaoGastos)
                 .orElse(0.0);
 
-        return Map.of(
-                "pmre", calculoService.calcularPMRE(),
-                "pmrv", calculoService.calcularPMRV(),
-                "pmpf", calculoService.calcularPMPF(),
-                "cicloOperacional", calculoService.calcularCicloOperacional(),
-                "cicloCaixa", calculoService.calcularCicloCaixa(),
-                "saldoMinimo", calculoService.calcularSaldoMinimo(previsaoGastos)
-        );
+        double pmre = calculoService.calcularPMRE();
+        double pmrv = calculoService.calcularPMRV();
+        double pmpf = calculoService.calcularPMPF();
+        double cicloOperacional = pmre + pmrv;
+        double cicloCaixa = cicloOperacional - pmpf;
+
+        CalculoService.CaixaResult caixa = calculoService.calcularSaldoMinimoCaixa(previsaoGastos, pmre, pmrv, pmpf);
+
+        Map<String, Double> resultado = new HashMap<>();
+        resultado.put("pmre", pmre);
+        resultado.put("pmrv", pmrv);
+        resultado.put("pmpf", pmpf);
+        resultado.put("cicloOperacional", cicloOperacional);
+        resultado.put("cicloCaixa", cicloCaixa);
+        resultado.put("saldoMinimo", caixa.getSaldoMinimo());
+
+        return resultado;
+    }
+
+    // 🔹 Listar histórico
+    @GetMapping("/historico")
+    public List<GestaoHistorico> listarHistorico() {
+        return gestaoHistoricoRepository.findAll();
+    }
+
+    // 🔹 Apagar item do histórico
+    @DeleteMapping("/historico/{id}")
+    public void apagarHistorico(@PathVariable Long id) {
+        gestaoHistoricoRepository.deleteById(id);
     }
 }

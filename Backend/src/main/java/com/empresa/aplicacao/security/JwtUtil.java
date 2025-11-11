@@ -1,29 +1,30 @@
-package com.empresa.aplicacao_calculos.security;
-
+package com.empresa.aplicacao.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
+import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-	private final String SECRET = "segredo_super_secreto";
-	private final long EXPIRACAO = 1000 * 60 * 60 * 24; // 24 horas
+	private final Key chave = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
 	public String gerarToken(String email) {
 		return Jwts.builder()
 				.setSubject(email)
 				.setIssuedAt(new Date())
-				.setExpiration(new Date(System.currentTimeMillis() + EXPIRACAO))
-				.signWith(SignatureAlgorithm.HS256, SECRET.getBytes())
+				.setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 dia
+				.signWith(chave)
 				.compact();
 	}
 
 	public String validarToken(String token) {
-		return Jwts.parser()
-				.setSigningKey(SECRET.getBytes())
+		return Jwts.parserBuilder()
+				.setSigningKey(chave)
+				.build()
 				.parseClaimsJws(token)
 				.getBody()
 				.getSubject();
